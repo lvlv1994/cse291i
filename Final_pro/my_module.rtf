@@ -1,0 +1,124 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1561\cocoasubrtf200
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;}
+{\colortbl;\red255\green255\blue255;}
+{\*\expandedcolortbl;;}
+\margl1440\margr1440\vieww10800\viewh8400\viewkind0
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+
+\f0\fs24 \cf0    \
+def downsample_layer(image):\
+    # Hidden layer with 76 * 57 * 64\
+    layer_1 = tf.layers.conv2d(image,filters=64,kernel_size=[7,7],strides=2,padding='VALID',activation=default_activation,name='Coarse1Conv1')\
+    layer_1 = tf.layers.batch_normalization(layer_1, training=is_training, name='Coarse1ConvBN1')\
+    max_pool1 = tf.layers.max_pooling2d(layer_1,pool_size=3,strides=2,name='Coarse1Max1')\
+    #print(np.shape(max_pool1))\
+    #Second block\
+    layer_2 = tf.layers.conv2d(max_pool1,filters=256,kernel_size=[1,1],strides=1,padding='VALID',activation=default_activation,name='Coarse1Conv2')\
+    layer_2 = tf.layers.batch_normalization(layer_2, training=is_training, name='Coarse1ConvBN2')\
+    #print(np.shape(layer_2))\
+    #Firt projection branch\
+    branch_1 = tf.layers.conv2d(max_pool1,filters=64,kernel_size=[1,1],strides=1,padding='VALID',activation=default_activation,name='Branch1Conv1')\
+    branch_1 = tf.layers.batch_normalization(branch_1, training=is_training, name='Branch1ConvBN1')\
+    #print(np.shape(branch_1))\
+    branch_1 = tf.layers.conv2d(branch_1,filters=64,kernel_size=[3,3],strides=1,padding='SAME',activation=default_activation,name='Branch1Conv2')\
+    branch_1 = tf.layers.batch_normalization(branch_1, training=is_training, name='Branch1ConvBN2')\
+    #print(np.shape(branch_1))\
+    branch_1 = tf.layers.conv2d(branch_1,filters=256,kernel_size=[1,1],strides=1,padding='SAME',activation=default_activation,name='Branch1Conv3')\
+    branch_1 = tf.layers.batch_normalization(branch_1, training=is_training, name='Branch1ConvBN3')\
+    #print(np.shape(branch_1))\
+    #concate  *******no relu\
+    concate_1 = tf.concat([layer_2,branch_1],name = 'Concate1',axis=3)\
+    \
+    concate_1 = tf.nn.leaky_relu(concate_1)\
+    #Second projection branch\
+    branch_2 = tf.layers.conv2d(concate_1,filters=64,kernel_size=[1,1],strides=1,padding='VALID',activation=default_activation,name='Branch2Conv1')\
+    branch_2 = tf.layers.batch_normalization(branch_2, training=is_training, name='Branch2ConvBN1')\
+    #print(np.shape(branch_2))\
+    branch_2 = tf.layers.conv2d(branch_2,filters=64,kernel_size=[3,3],strides=1,padding='SAME',activation=default_activation,name='Branch2Conv2')\
+    branch_2 = tf.layers.batch_normalization(branch_2, training=is_training, name='Branch2ConvBN2')\
+    #print(np.shape(branch_2))\
+    branch_2 = tf.layers.conv2d(branch_2,filters=256,kernel_size=[1,1],strides=1,padding='SAME',activation=default_activation,name='Branch2Conv3')\
+    branch_2 = tf.layers.batch_normalization(branch_2, training=is_training, name='Branch2ConvBN3')\
+    #print(np.shape(branch_2))\
+    #concate\
+    concate_2 = tf.concat([concate_1,branch_2],name = 'Concate2',axis=3)\
+    concate_2 = tf.nn.leaky_relu(concate_2)\
+    # Third projection branch\
+    branch_3 = tf.layers.conv2d(concate_2,filters=64,kernel_size=[1,1],strides=1,padding='VALID',activation=default_activation,name='Branch3Conv1')\
+    branch_3 = tf.layers.batch_normalization(branch_3, training=is_training, name='Branch3ConvBN1')\
+    branch_3 = tf.layers.conv2d(branch_3,filters=64,kernel_size=[3,3],strides=1,padding='SAME',activation=default_activation,name='Branch3Conv2')\
+    branch_3 = tf.layers.batch_normalization(branch_3, training=is_training, name='Branch3ConvBN2')\
+    branch_3 = tf.layers.conv2d(branch_3,filters=256,kernel_size=[1,1],strides=1,padding='SAME',activation=default_activation,name='Branch3Conv3')\
+    branch_3 = tf.layers.batch_normalization(branch_3, training=is_training, name='Branch3ConvBN3')\
+ \
+    # concate\
+    concate_3 = tf.concat([concate_2,branch_3],name = 'Concate3',axis=3)\
+    concate_3 = tf.nn.leaky_relu(concate_3)\
+    #print(concate_3)\
+    \
+    #Fourth branch\
+    branch_4 = tf.layers.conv2d(concate_3,filters=512,kernel_size=[1,1],strides=2,padding='SAME',activation=default_activation,name='Branch4Conv1')\
+    branch_4 = tf.layers.batch_normalization(branch_4, training=is_training, name='Branch4ConvBN1')\
+    \
+    #print(np.shape(branch_4))\
+\
+    # Fifth branch\
+    branch_5 = tf.layers.conv2d(concate_3,filters=128,kernel_size=[1,1],strides=2,padding='VALID',activation=default_activation,name='Branch5Conv1')\
+    branch_5 = tf.layers.batch_normalization(branch_5, training=is_training, name='Branch5ConvBN1')\
+    #print(np.shape(branch_5))\
+    branch_5 = tf.layers.conv2d(branch_5,filters=128,kernel_size=[3,3],strides=1,padding='SAME',activation=default_activation,name='Branch5Conv2')\
+    branch_5 = tf.layers.batch_normalization(branch_5, training=is_training, name='Branch5ConvBN2')\
+    #print(np.shape(branch_5))\
+    branch_5 = tf.layers.conv2d(branch_5,filters=512,kernel_size=[1,1],strides=1,padding='SAME',activation=default_activation,name='Branch5Conv3')\
+    branch_5 = tf.layers.batch_normalization(branch_5, training=is_training, name='Branch5ConvBN3')\
+    #print(np.shape(branch_5))\
+    #Concate\
+    \
+    concate_4 = tf.concat([branch_4,branch_5],name = 'Concate4',axis=3)\
+    concate_4 = tf.nn.leaky_relu(concate_4)\
+    print(np.shape(concate_4))\
+    \
+    #Sixth branch\
+    branch_6 = tf.layers.conv2d(concate_4,filters=128,kernel_size=[1,1],strides=1,padding='VALID',activation=default_activation,name='Branch6Conv1')\
+    branch_6 = tf.layers.batch_normalization(branch_6, training=is_training, name='Branch6ConvBN1')\
+    print(np.shape(branch_6))\
+    branch_6 = tf.layers.conv2d(branch_6,filters=128,kernel_size=[3,3],strides=1,padding='SAME',activation=default_activation,name='Branch6Conv2')\
+    branch_6 = tf.layers.batch_normalization(branch_6, training=is_training, name='Branch6ConvBN2')\
+    print(np.shape(branch_6))\
+    branch_6 = tf.layers.conv2d(branch_6,filters=512,kernel_size=[1,1],strides=1,padding='SAME',activation=default_activation,name='Branch6Conv3')\
+    branch_6 = tf.layers.batch_normalization(branch_6, training=is_training, name='Branch6ConvBN3')\
+    print(np.shape(branch_6))\
+    #Concate\
+    concate_5 = tf.concat([concate_4,branch_6],name = 'Concate5',axis=3)\
+    concate_5 = tf.nn.leaky_relu(concate_5)\
+    \
+    #Seventh branch\
+    branch_7 = tf.layers.conv2d(concate_5,filters=128,kernel_size=[1,1],strides=1,padding='VALID',activation=default_activation,name='Branch7Conv1')\
+    branch_7 = tf.layers.batch_normalization(branch_7, training=is_training, name='Branch7ConvBN1')\
+    branch_7 = tf.layers.conv2d(branch_7,filters=128,kernel_size=[3,3],strides=1,padding='SAME',activation=default_activation,name='Branch7Conv2')\
+    branch_7 = tf.layers.batch_normalization(branch_7, training=is_training, name='Branch7ConvBN2')\
+    branch_7 = tf.layers.conv2d(branch_7,filters=512,kernel_size=[1,1],strides=1,padding='SAME',activation=default_activation,name='Branch7Conv3')\
+    branch_7 = tf.layers.batch_normalization(branch_7, training=is_training, name='Branch7ConvBN3')\
+    \
+    print(np.shape(branch_7))\
+    \
+    branch_8 = tf.layers.conv2d(branch_7,filters=256,kernel_size=[3,3],strides=3,padding='VALID',activation=default_activation,name='Branch8Conv1')\
+    branch_8 = tf.layers.batch_normalization(branch_8, training=is_training, name='Branch8ConvBN1')\
+\
+\
+    \
+    return branch_8\
+\
+def fully_connect_layer(conv_data,dropout,is_training):\
+    conv_data = tf.reshape(conv_data,[-1,conv_data.shape[1]*conv_data.shape[2]*conv_data.shape[3]])\
+    \
+    layer_1 = tf.layers.dense(conv_data,units=4096,activation=default_activation,name='CoarseFC1')\
+    #layer_1 = tf.layers.batch_normalization(layer_1, training=is_training, name='CoarseFCBN1')\
+    layer_1 = tf.layers.dropout(layer_1,rate=dropout,training=is_training,name='CoarseFCDrop1')\
+    \
+    layer_2 = tf.layers.dense(layer_1,units=4070,activation=None,name='CoarseFC2')\
+    #layer_2 = tf.layers.batch_normalization(layer_2, training=is_training, name='CoarseFCBN2')\
+    out_layer = tf.reshape(layer_2,[-1,55,74,1])\
+    return out_layer\
+\
+}
